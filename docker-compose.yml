@@ -30,10 +30,14 @@ services:
       - "9001:9001"
 
   api:
+    env_file:
+      - ./services/api-gateway/.env
     build:
       context: ./services/api-gateway
     ports:
       - "8000:8000"
+    volumes:
+      - ./services/api-gateway:/app
     depends_on:
       - postgres
       - redis
