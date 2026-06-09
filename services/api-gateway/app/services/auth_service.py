@@ -1,6 +1,6 @@
 from app.core.security import hash_password
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin
+from app.schemas.user import UserCreate
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 

@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str
     REDIS_URL: str
     POSTGRES_URL: str
+    BUCKET_NAME: str
     model_config = SettingsConfigDict(env_file=".env")
 
 

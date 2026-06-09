@@ -8,7 +8,9 @@ from fastapi import FastAPI
 
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
+from app.api.videos import router as videos_router
 from app.db.database import Base, engine
+from app.services.minio_service import create_bucket
 
 from . import config
 
@@ -21,6 +23,8 @@ async def lifespan(app: FastAPI):
     for _ in range(15):
         try:
             Base.metadata.create_all(bind=engine)
+            create_bucket()
+            print("MinIO bucket ready")
             print("Database connected")
             break
         except Exception as e:
@@ -35,6 +39,7 @@ app = FastAPI(title="StreamForge", lifespan=lifespan)
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(videos_router)
 
 
 @lru_cache

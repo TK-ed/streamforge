@@ -1,10 +1,10 @@
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, security
 from app.models.user import User
 from fastapi import APIRouter, Depends, Header
 from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(prefix="/users", tags=["Users"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 @router.get("/me")
@@ -18,5 +18,5 @@ def test(authorization: str = Header(None)):
 
 
 @router.get("/debug-token")
-def debug_token(token: str = Depends(oauth2_scheme)):
+def debug_token(token: str = Depends(security)):
     return {"token": token}
