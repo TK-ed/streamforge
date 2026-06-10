@@ -23,8 +23,9 @@ def callback(
         data = json.loads(body)
 
         video_id = data["video_id"]
+        object_name = f"uploads/{video_id}/input.mp4"
 
-        logger.info(f"Consumer is consuming{body}")
+        logger.info(f"Consumer is consuming video_id:{video_id}")
 
         retries = data.get(
             "retry_count",
@@ -41,30 +42,27 @@ def callback(
             )
             return
 
-        process_video(
-            db=db,
-            video=video,
-        )
+        process_video(video=video, object_name=object_name, db=db)
         video.status = Status.COMPLETED
         db.commit()
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
         db.rollback()
 
+        retries = data.get("retry_count", 0)
+
         if retries >= MAX_RETRIES:
             if video:
-                video.status = VideoStatus.FAILED
+                video.status = Status.FAILED
                 db.commit()
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        data["retry_count"] = MAX_RETRIES + 1
-
-        time.sleep(2**MAX_RETRIES)
+        data["retry_count"] = retries + 1
 
         ch.basic_publish(
             exchange="",
@@ -75,4 +73,4 @@ def callback(
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     finally:
-        db.close()
+        return

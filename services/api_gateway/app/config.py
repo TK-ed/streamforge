@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     POSTGRES_URL: str
     BUCKET_NAME: str
     model_config = SettingsConfigDict(env_file=".env")
+    VIDEO_QUEUE: str
+    DLQ_QUEUE: str
+    VIDEO_DLX: str
+    VIDEO_FAILED_ROUTING_KEY: str
 
 
 settings = Settings()
