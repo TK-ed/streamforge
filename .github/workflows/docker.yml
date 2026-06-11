@@ -17,15 +17,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ---- API SERVICE BUILD ----
       - name: Build API Gateway
         run: |
-          docker build -t api-gateway:ci ./services/api_gateway
+          docker build -f services/api_gateway/Dockerfile -t api-gateway:ci .
 
-      # ---- WORKER BUILD ----
       - name: Build Worker
         run: |
-          docker build -t worker:ci ./workers
+          docker build -f workers/Dockerfile -t worker:ci .
 
       # ---- OPTIONAL: Infra validation ----
       - name: Validate docker-compose (if exists)
