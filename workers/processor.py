@@ -2,7 +2,9 @@ import os
 
 from constants import VideoStatus as Status
 from services.logger import logger
-from services.minio import download_video
+from services.minio import download_video, upload_hls_thumbnail_video, upload_hls_video
+from services.thumbnail import generate_thumbnail
+from services.transcoder import generate_hls
 
 from shared.db import db
 from shared.models.video import Video
@@ -23,4 +25,15 @@ def process_video(video: Video, object_name: str, db: db):
     if not verify_download(path):
         return
     logger.info(f"File ready at {destination_path}")
-    # processing logic
+
+    input_path = f"/tmp/{video.id}/input.mp4"
+
+    hls_dir = f"/tmp/{video.id}/hls"
+    thumbnail_path = f"{hls_dir}/thumbnail.jpg"
+
+    generate_thumbnail(input_path, thumbnail_path)
+    generate_hls(input_path, hls_dir)
+
+    upload_hls_video(hls_dir=hls_dir, video_id=str(object_name), logger=logger)
+    upload_hls_thumbnail_video(hls_dir=hls_dir, video_id=str(object_name))
+    logger.info("Processing completed successfully")

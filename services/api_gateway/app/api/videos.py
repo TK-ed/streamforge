@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from app.config import settings
 from app.core.dependencies import get_current_user
-from app.services.minio_service import client, upload_file
+from app.services.minio_service import client, get_file_details, upload_file
 from app.services.rabbitmq_service import publish_video_uploaded
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
@@ -35,9 +35,9 @@ async def get_videos(
     ]
 
 
-@router.get("/{video_id}")
+@router.get("/{video_id}/stream")
 def get_video(
-    video_id: int,
+    video_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -49,14 +49,19 @@ def get_video(
         )
         .first()
     )
-
+    test = str(video.id)
+    logger.info(f"video: {video}")
+    test = f"hls/uploads/{test}/input.mp4/index.m3u8"
+    logger.info(f"passing value: {test}")
     if not video:
         raise HTTPException(
             status_code=404,
             detail="Video not found",
         )
 
-    return video
+    url = get_file_details(test)
+
+    return {"streaming_url": url}
 
 
 @router.post("/upload")
