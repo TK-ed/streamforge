@@ -49,9 +49,25 @@ services:
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: password123
+    volumes:
+      - minio_data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
+    tty: true
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    restart: "no"
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      mc alias set local ${MINIO_ENDPOINT} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
+      mc anonymous set download local/${BUCKET_NAME};
+      mc anonymous get local/${BUCKET_NAME};
+      "
 
   migrate:
     build:
@@ -84,3 +100,6 @@ services:
       - redis
       - rabbitmq
       - minio
+
+volumes:
+  minio_data:

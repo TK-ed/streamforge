@@ -1,6 +1,8 @@
 from io import BytesIO
+from logging import raiseExceptions
 
 from app.config import settings
+from fastapi.responses import StreamingResponse
 from minio import Minio
 
 client = Minio(
@@ -28,3 +30,14 @@ def upload_file(
         length=len(file_bytes),
         content_type=content_type,
     )
+
+
+def get_file_details(object_name: str):
+    try:
+        obj = client.get_object(settings.BUCKET_NAME, object_name)
+        if obj:
+            print(f"Got the file: {object_name}")
+            hls_streaming_url = f"http://localhost:9000/streamforge/{object_name}"
+            return hls_streaming_url
+    except Exception as e:
+        print(e)
