@@ -4,28 +4,82 @@ import subprocess
 from services.logger import logger
 
 
-def generate_hls(input_path: str, output_dir: str):
-    os.makedirs(output_dir, exist_ok=True)
+def run(cmd):
+    subprocess.run(cmd, check=True)
 
-    output_path = os.path.join(output_dir, "index.m3u8")
 
-    command = [
-        "ffmpeg",
-        "-i",
-        input_path,
-        "-c",
-        "copy",
-        "-start_number",
-        "0",
-        "-hls_time",
-        "4",
-        "-hls_list_size",
-        "0",
-        "-f",
-        "hls",
-        output_path,
-    ]
+def transcode(video_path, out_dir):
+    os.makedirs(out_dir, exist_ok=True)
 
-    subprocess.run(command, check=True)
-    logger.info("HLS is generated!")
-    return output_path
+    out_360 = f"{out_dir}/360p.mp4"
+    out_720 = f"{out_dir}/720p.mp4"
+    out_1080 = f"{out_dir}/1080p.mp4"
+
+    # 360p
+    run(
+        [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-vf",
+            "scale=w=640:h=360:force_original_aspect_ratio=decrease",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "fast",
+            "-b:v",
+            "800k",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "96k",
+            out_360,
+        ]
+    )
+
+    # 720p
+    run(
+        [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-vf",
+            "scale=w=1280:h=720:force_original_aspect_ratio=decrease",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "fast",
+            "-b:v",
+            "2500k",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+            out_720,
+        ]
+    )
+
+    # 1080p
+    run(
+        [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-vf",
+            "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "fast",
+            "-b:v",
+            "5000k",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+            out_1080,
+        ]
+    )
+    logger.info("Transcoding has been completed")
+
+    return {"360p": out_360, "720p": out_720, "1080p": out_1080}

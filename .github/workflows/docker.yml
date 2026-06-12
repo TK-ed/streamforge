@@ -17,6 +17,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # -------------------------
+      # Build images
+      # -------------------------
       - name: Build API Gateway
         run: |
           docker build -f services/api_gateway/Dockerfile -t api-gateway:ci .
@@ -25,7 +28,23 @@ jobs:
         run: |
           docker build -f workers/Dockerfile -t worker:ci .
 
-      # ---- OPTIONAL: Infra validation ----
-      - name: Validate docker-compose (if exists)
+      # -------------------------
+      # Smoke test container
+      # -------------------------
+      - name: Run API container (smoke test)
+        run: |
+          docker run -d --name api-test api-gateway:ci
+          sleep 5
+          docker ps | grep api-test
+
+      - name: Cleanup containers
+        run: |
+          docker stop api-test || true
+          docker rm api-test || true
+
+      # -------------------------
+      # Compose validation
+      # -------------------------
+      - name: Validate docker-compose
         run: |
           test -f docker-compose.yml && docker compose config || echo "No compose file"
