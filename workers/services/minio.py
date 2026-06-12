@@ -1,7 +1,6 @@
 import os
 
 from minio import Minio
-from minio.error import S3Error
 
 from workers.services.logger import logger
 
@@ -34,13 +33,23 @@ def download_video(object_name: str, destination_path: str):
 
 def upload_hls_video(hls_dir: str, video_id: str, logger):
     upload_prefix = f"hls/{video_id}"
+
     for root, _, files in os.walk(hls_dir):
         for file in files:
             file_path = os.path.join(root, file)
 
-            object_name = f"{upload_prefix}/{file}"
-            # logger.info(f"Uploading {file} → {object_name}")
-            client.fput_object("streamforge", object_name, file_path)
+            relative_path = os.path.relpath(file_path, hls_dir)
+
+            object_name = f"{upload_prefix}/{relative_path}"
+
+            logger.info(f"Uploading {file_path} → {object_name}")
+
+            try:
+                client.fput_object("streamforge", object_name, file_path)
+                logger.info(f"UPLOADED: {object_name}")
+            except Exception as e:
+                logger.error(f"UPLOAD FAILED {object_name}: {e}")
+                raise
 
     logger.info(f"HLS upload completed for video_id={video_id}")
 
@@ -53,8 +62,12 @@ def upload_hls_thumbnail_video(
 
     object_name = f"hls/{video_id}/thumbnail.jpg"
 
-    client.fput_object(
-        "streamforge",
-        object_name,
-        thumbnail_path,
-    )
+    try:
+        client.fput_object(
+            "streamforge",
+            object_name,
+            thumbnail_path,
+        )
+    except Exception as e:
+        logger.error(f"UPLOAD FAILED {object_name}: {e}")
+        raise

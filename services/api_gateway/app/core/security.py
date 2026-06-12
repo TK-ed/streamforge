@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timedelta
 
 from app.config import settings

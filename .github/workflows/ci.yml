@@ -13,8 +13,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - run: python -m compileall .
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov flake8 black isort mypy bandit pip-audit
+
+      # -------------------------
+      # 1. Code Quality Checks
+      # -------------------------
+      - name: Lint (flake8)
+        run: flake8 services shared workers
+
+      - name: Format check (black)
+        run: black --check services shared workers
+
+      - name: Import sorting (isort check)
+        run: isort services shared workers --check-only
+
+      # -------------------------
+      # 2. Type Checking
+      # -------------------------
+      # - name: Type check (mypy)
+      #   run: mypy services shared workers
+
+      # # -------------------------
+      # # 3. Security Checks
+      # # -------------------------
+      # - name: Security scan (bandit)
+      #   run: bandit -r services shared workers
+
+      # - name: Dependency audit
+      #   run: pip-audit
+
+      # -------------------------
+      # 4. Basic compilation safety
+      # -------------------------
+      - name: Python compile check
+        run: python -m compileall .

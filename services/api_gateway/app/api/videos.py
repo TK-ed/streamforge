@@ -1,14 +1,11 @@
-import os
 from uuid import uuid4
 
-from app.config import settings
 from app.core.dependencies import get_current_user
-from app.services.minio_service import client, get_file_details, upload_file
+from app.services.minio_service import get_file_details, upload_file
 from app.services.rabbitmq_service import publish_video_uploaded
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from services.api_gateway.app.services.minio_service import client
 from shared.db.db import get_db
 from shared.models.user import User
 from shared.models.video import Video

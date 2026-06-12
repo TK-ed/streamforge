@@ -11,8 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -25,7 +24,6 @@ jobs:
         run: |
           docker build -f workers/Dockerfile -t worker:ci .
 
-      # ---- OPTIONAL: Infra validation ----
-      - name: Validate docker-compose (if exists)
+      - name: Validate docker-compose
         run: |
           test -f docker-compose.yml && docker compose config || echo "No compose file"

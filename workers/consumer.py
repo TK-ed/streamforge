@@ -1,8 +1,7 @@
 import json
-import time
 import traceback
 
-from constants import MAX_RETRIES, VIDEO_QUEUE, VideoStatus
+from constants import MAX_RETRIES, VIDEO_QUEUE
 from db import SessionLocal
 from processor import process_video
 from services.logger import logger
@@ -48,7 +47,7 @@ def callback(
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
         db.rollback()
 

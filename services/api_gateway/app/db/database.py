@@ -1,5 +1,3 @@
-import os
-
 from app.config import settings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker

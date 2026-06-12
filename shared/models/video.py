@@ -1,13 +1,6 @@
 import uuid
 
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-)
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -39,6 +32,8 @@ class Video(Base):
 
     status = Column(
         String,
+        nullable=False,
+        default="uploaded",  # uploaded | processing | ready | failed
     )
 
     created_at = Column(
@@ -47,3 +42,5 @@ class Video(Base):
     )
 
     thumbnail_object_name = Column(String, nullable=True)
+
+    hls_master_url = Column(Text, nullable=True)
