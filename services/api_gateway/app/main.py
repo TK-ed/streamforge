@@ -3,15 +3,13 @@ import time
 from contextlib import asynccontextmanager
 from functools import lru_cache
 
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
 from app.api.videos import router as videos_router
 from app.services.minio_service import create_bucket
-from shared.db.db import Base, engine
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from . import config
 

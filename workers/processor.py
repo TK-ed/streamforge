@@ -3,7 +3,8 @@ import os
 from constants import VideoStatus as Status
 from helpers import create_master_playlist, generate_hls
 from services.logger import logger
-from services.minio import download_video, upload_hls_thumbnail_video, upload_hls_video
+from services.minio import (download_video, upload_hls_thumbnail_video,
+                            upload_hls_video)
 from services.thumbnail import generate_thumbnail
 from services.transcoder import transcode
 

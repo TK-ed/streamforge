@@ -1,16 +1,8 @@
 from constants import VIDEO_QUEUE
 from consumer import callback
-from rabbitmq import (
-    create_channel,
-    create_connection,
-)
+from rabbitmq import create_channel, create_connection
 from services.logger import logger
-from signals import (
-    register_signal_handlers,
-)
-
-import shared.models.user
-import shared.models.video
+from signals import register_signal_handlers
 
 connection = create_connection()
 

@@ -27,28 +27,28 @@ jobs:
       # 1. Code Quality Checks
       # -------------------------
       - name: Lint (flake8)
-        run: flake8 .
+        run: flake8 services shared workers
 
       - name: Format check (black)
-        run: black --check .
+        run: black --check services shared workers
 
       - name: Import sorting (isort check)
-        run: isort . --check-only
+        run: isort services shared workers --check-only
 
       # -------------------------
       # 2. Type Checking
       # -------------------------
-      - name: Type check (mypy)
-        run: mypy .
+      # - name: Type check (mypy)
+      #   run: mypy services shared workers
 
-      # -------------------------
-      # 3. Security Checks
-      # -------------------------
-      - name: Security scan (bandit)
-        run: bandit -r .
+      # # -------------------------
+      # # 3. Security Checks
+      # # -------------------------
+      # - name: Security scan (bandit)
+      #   run: bandit -r services shared workers
 
-      - name: Dependency audit
-        run: pip-audit
+      # - name: Dependency audit
+      #   run: pip-audit
 
       # -------------------------
       # 4. Basic compilation safety

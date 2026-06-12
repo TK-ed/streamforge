@@ -1,7 +1,8 @@
 import time
 
 import pika
-from constants import DLQ_QUEUE, VIDEO_DLX, VIDEO_FAILED_ROUTING_KEY, VIDEO_QUEUE
+from constants import (DLQ_QUEUE, VIDEO_DLX, VIDEO_FAILED_ROUTING_KEY,
+                       VIDEO_QUEUE)
 from services.logger import logger
 
 

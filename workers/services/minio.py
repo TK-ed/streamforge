@@ -1,7 +1,6 @@
 import os
 
 from minio import Minio
-from minio.error import S3Error
 
 from workers.services.logger import logger
 

@@ -1,6 +1,5 @@
 from app.core.dependencies import get_current_user, security
 from fastapi import APIRouter, Depends, Header
-from fastapi.security import OAuth2PasswordBearer
 
 from shared.models.user import User
 

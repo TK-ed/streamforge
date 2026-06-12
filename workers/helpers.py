@@ -2,7 +2,6 @@ import os
 import subprocess
 
 from services.logger import logger
-from services.transcoder import run
 
 
 def verify_download(path: str) -> bool:
