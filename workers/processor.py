@@ -3,6 +3,7 @@ import time
 
 from constants import VideoStatus as Status
 from services.logger import logger
+from services.metrics import VIDEO_FAILED, VIDEO_PROCESSING_TIME
 from services.minio import download_video, upload_hls_thumbnail_video, upload_hls_video
 from services.publisher import publish_event
 from services.thumbnail import generate_thumbnail
@@ -76,6 +77,8 @@ def process_video(video: Video, object_name: str, db, channel):
 
         total_time = time.perf_counter() - start_time
 
+        VIDEO_PROCESSING_TIME.observe(total_time)
+
         logger.info(f"""
         PROCESSING BREAKDOWN
         -------------------
@@ -88,4 +91,5 @@ def process_video(video: Video, object_name: str, db, channel):
     except Exception as e:
         logger.exception("❌ PROCESS VIDEO FAILED: %s", str(e))
         video.status = Status.FAILED
+        VIDEO_FAILED.inc()
         raise

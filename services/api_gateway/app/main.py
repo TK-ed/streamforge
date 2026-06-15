@@ -3,13 +3,17 @@ import time
 from contextlib import asynccontextmanager
 from functools import lru_cache
 
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
+from slowapi.middleware import SlowAPIMiddleware
+
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
 from app.api.videos import router as videos_router
 from app.services.minio_service import create_bucket
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from services.api_gateway.app.core.middleware import limiter
 
 from . import config
 
@@ -35,6 +39,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="StreamForge", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "https://yourfrontend.com"],
@@ -42,6 +49,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+instrumentator = Instrumentator()
+instrumentator.instrument(app).expose(app)
 
 app.include_router(auth_router)
 app.include_router(users_router)
