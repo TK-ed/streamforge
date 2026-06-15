@@ -8,78 +8,109 @@ def run(cmd):
     subprocess.run(cmd, check=True)
 
 
-def transcode(video_path, out_dir):
-    os.makedirs(out_dir, exist_ok=True)
+def generate_adaptive_hls(input_path: str, output_dir: str):
+    os.makedirs(output_dir, exist_ok=True)
 
-    out_360 = f"{out_dir}/360p.mp4"
-    out_720 = f"{out_dir}/720p.mp4"
-    out_1080 = f"{out_dir}/1080p.mp4"
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-filter_complex",
+        (
+            "[0:v]split=3[v360in][v720in][v1080in];"
+            "[v360in]scale=640:360[v360];"
+            "[v720in]scale=1280:720[v720];"
+            "[v1080in]scale=1920:1080[v1080]"
+        ),
+        # 360p
+        "-map",
+        "[v360]",
+        "-map",
+        "0:a?",
+        # 720p
+        "-map",
+        "[v720]",
+        "-map",
+        "0:a?",
+        # 1080p
+        "-map",
+        "[v1080]",
+        "-map",
+        "0:a?",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "superfast",
+        "-r",
+        "30",
+        "-c:a",
+        "aac",
+        "-ar",
+        "48000",
+        "-b:v:0",
+        "800k",
+        "-b:v:1",
+        "2500k",
+        "-b:v:2",
+        "5000k",
+        "-b:a",
+        "128k",
+        "-f",
+        "hls",
+        "-hls_time",
+        "4",
+        "-hls_list_size",
+        "0",
+        "-master_pl_name",
+        "master.m3u8",
+        "-var_stream_map",
+        "v:0,a:0,name:360p v:1,a:1,name:720p v:2,a:2,name:1080p",
+        "-hls_segment_filename",
+        f"{output_dir}/%v/segment_%03d.ts",
+        f"{output_dir}/%v/index.m3u8",
+    ]
 
-    # 360p
+    logger.info("Starting adaptive HLS generation")
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        logger.error(result.stderr)
+        raise Exception("Adaptive HLS generation failed")
+
+    logger.info("Adaptive HLS generation completed")
+
+    return os.path.join(output_dir, "master.m3u8")
+
+
+def transcode_variant(video_path, output_path, width, height, v_bitrate, a_bitrate):
     run(
         [
             "ffmpeg",
+            "-y",
             "-i",
             video_path,
             "-vf",
-            "scale=w=640:h=360:force_original_aspect_ratio=decrease",
+            f"scale=w={width}:h={height}:force_original_aspect_ratio=decrease",
             "-c:v",
             "libx264",
             "-preset",
-            "fast",
+            "superfast",
             "-b:v",
-            "800k",
+            v_bitrate,
             "-c:a",
             "aac",
             "-b:a",
-            "96k",
-            out_360,
+            "-r",
+            "30",
+            a_bitrate,
+            output_path,
         ]
     )
 
-    # 720p
-    run(
-        [
-            "ffmpeg",
-            "-i",
-            video_path,
-            "-vf",
-            "scale=w=1280:h=720:force_original_aspect_ratio=decrease",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "fast",
-            "-b:v",
-            "2500k",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "128k",
-            out_720,
-        ]
-    )
-
-    # 1080p
-    run(
-        [
-            "ffmpeg",
-            "-i",
-            video_path,
-            "-vf",
-            "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "fast",
-            "-b:v",
-            "5000k",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "128k",
-            out_1080,
-        ]
-    )
-    logger.info("Transcoding has been completed")
-
-    return {"360p": out_360, "720p": out_720, "1080p": out_1080}
+    return output_path

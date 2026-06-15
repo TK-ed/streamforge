@@ -48,7 +48,7 @@ def get_video(
     )
     test = str(video.id)
     logger.info(f"video: {video}")
-    test = f"hls/uploads/{test}/input.mp4/index.m3u8"
+    test = f"hls/uploads/{test}/input.mp4/master.m3u8"
     logger.info(f"passing value: {test}")
     if not video:
         raise HTTPException(
