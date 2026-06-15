@@ -67,16 +67,14 @@ def process_video(video: Video, object_name: str, db: db):
 
         total_time = time.perf_counter() - start_time
 
-        logger.info(
-            f"""
+        logger.info(f"""
         PROCESSING BREAKDOWN
         -------------------
         Download   : {download_time:.2f}s
         HLS        : {hls_time:.2f}s
         Upload     : {upload_time:.2f}s
         Total      : {total_time:.2f}s
-        """
-        )
+        """)
 
     except Exception as e:
         logger.exception("❌ PROCESS VIDEO FAILED: %s", str(e))
