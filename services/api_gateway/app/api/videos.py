@@ -35,6 +35,7 @@ async def get_videos(
 @router.get("/{video_id}/stream")
 def get_video(
     video_id: str,
+    quality: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -46,17 +47,17 @@ def get_video(
         )
         .first()
     )
-    test = str(video.id)
+    file = str(video.id)
     logger.info(f"video: {video}")
-    test = f"hls/uploads/{test}/input.mp4/master.m3u8"
-    logger.info(f"passing value: {test}")
+    file = f"hls/uploads/{file}/input.mp4/{quality}p/index.m3u8"
+    logger.info(f"passing value: {file}")
     if not video:
         raise HTTPException(
             status_code=404,
             detail="Video not found",
         )
 
-    url = get_file_details(test)
+    url = get_file_details(file)
 
     return {"streaming_url": url}
 
@@ -67,55 +68,59 @@ async def upload_video(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    file_bytes = await file.read()
+    try:
+        file_bytes = await file.read()
 
-    video_id = str(uuid4())
-    object_name = f"uploads/{video_id}/input.mp4"
+        video_id = str(uuid4())
+        object_name = f"uploads/{video_id}/input.mp4"
 
-    print(object_name)
-    existing = (
-        db.query(Video)
-        .filter(
-            Video.user_id == current_user.id,
-            Video.filename == file.filename,
+        print(object_name)
+        existing = (
+            db.query(Video)
+            .filter(
+                Video.user_id == current_user.id,
+                Video.filename == file.filename,
+            )
+            .first()
         )
-        .first()
-    )
 
-    if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="File already uploaded",
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="File already uploaded",
+            )
+        upload_file(
+            file_bytes=file_bytes,
+            object_name=object_name,
+            content_type=file.content_type,
         )
-    upload_file(
-        file_bytes=file_bytes,
-        object_name=object_name,
-        content_type=file.content_type,
-    )
 
-    print("CURRENT USER ID:", current_user.id)
-    print("FILE NAME:", file.filename)
-    print("CONTENT TYPE:", file.content_type)
-    print("SIZE:", len(file_bytes))
+        print("CURRENT USER ID:", current_user.id)
+        print("FILE NAME:", file.filename)
+        print("CONTENT TYPE:", file.content_type)
+        print("SIZE:", len(file_bytes))
 
-    video = Video(
-        id=video_id,
-        user_id=current_user.id,
-        filename=file.filename,
-        object_name=object_name,
-        content_type=file.content_type,
-        size=len(file_bytes),
-        status="pending",
-    )
+        video = Video(
+            id=video_id,
+            user_id=current_user.id,
+            filename=file.filename,
+            object_name=object_name,
+            content_type=file.content_type,
+            size=len(file_bytes),
+            status="pending",
+        )
 
-    db.add(video)
-    db.commit()
-    db.refresh(video)
+        db.add(video)
+        db.commit()
+        db.refresh(video)
 
-    publish_video_uploaded(video)
-    print(f"Published video {video.id} to RabbitMQ", flush=True)
-    return {
-        "id": video.id,
-        "object_name": video.object_name,
-        "status": video.status,
-    }
+        publish_video_uploaded(video)
+        print(f"Published video {video.id} to RabbitMQ", flush=True)
+        return {
+            "id": video.id,
+            "object_name": video.object_name,
+            "status": video.status,
+        }
+
+    except Exception as e:
+        logger.warning(e)

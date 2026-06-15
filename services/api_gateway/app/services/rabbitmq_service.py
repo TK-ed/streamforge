@@ -4,6 +4,7 @@ import pika
 from app.config import settings
 
 from shared.models.video import Video
+from workers.constants import VideoEvents as EVENT
 
 
 def publish_video_uploaded(video: Video):
@@ -15,13 +16,14 @@ def publish_video_uploaded(video: Video):
     channel.queue_declare(
         queue=settings.VIDEO_QUEUE,
         durable=True,
-        arguments={
-            "x-dead-letter-exchange": settings.VIDEO_DLX,
-            "x-dead-letter-routing-key": settings.VIDEO_FAILED_ROUTING_KEY,
-        },
     )
 
-    message = {"video_id": str(video.id), "retry_count": 0}
+    message = {
+        "video_id": str(video.id),
+        "retry_count": 0,
+        "user_id": str(video.user_id),
+        "event": EVENT.VIDEO_PROCESSING_STARTED,
+    }
     channel.basic_publish(
         exchange="",
         routing_key="video.processing",
