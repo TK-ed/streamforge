@@ -1,11 +1,11 @@
 import os
+import time
 
 from constants import VideoStatus as Status
-from helpers import create_master_playlist, generate_hls
 from services.logger import logger
 from services.minio import download_video, upload_hls_thumbnail_video, upload_hls_video
 from services.thumbnail import generate_thumbnail
-from services.transcoder import transcode
+from services.transcoder import generate_adaptive_hls
 
 from shared.db import db
 from shared.models.video import Video
@@ -15,6 +15,7 @@ from workers.helpers import verify_download
 def process_video(video: Video, object_name: str, db: db):
     try:
         print("🔥🔥🔥 PROCESS_VIDEO ACTIVE NEW BUILD 🔥🔥🔥")
+        start_time = time.perf_counter()
 
         video.status = Status.PROCESSING
         db.commit()
@@ -24,10 +25,14 @@ def process_video(video: Video, object_name: str, db: db):
         destination_path = os.path.join(video_dir, "input.mp4")
 
         # download
+
+        download_start = time.perf_counter()
+
         path = download_video(str(object_name), destination_path)
         if not verify_download(path):
             return
 
+        download_time = time.perf_counter() - download_start
         logger.info(f"File ready at {destination_path}")
 
         input_path = f"/tmp/{video.id}/input.mp4"
@@ -42,40 +47,37 @@ def process_video(video: Video, object_name: str, db: db):
         renditions_dir = f"/tmp/{video.id}/renditions"
         os.makedirs(renditions_dir, exist_ok=True)
 
-        renditions = transcode(input_path, renditions_dir)
-        logger.info("Transcoding completed")
+        hls_start = time.perf_counter()
+        generate_adaptive_hls(
+            input_path=input_path,
+            output_dir=hls_dir,
+        )
+        hls_time = time.perf_counter() - hls_start
+        logger.info(
+            f"Adaptive HLS generation took {time.perf_counter() - hls_time:.2f}s"
+        )
 
-        # generate hls
-        logger.info(f"HLS DIR CONTENTS: {os.listdir(hls_dir)}")
-        logger.info("🔥 ABOUT TO GENERATE HLS")
-
-        p360 = os.path.join(hls_dir, "360p")
-        p720 = os.path.join(hls_dir, "720p")
-        p1080 = os.path.join(hls_dir, "1080p")
-
-        os.makedirs(p360, exist_ok=True)
-        os.makedirs(p720, exist_ok=True)
-        os.makedirs(p1080, exist_ok=True)
-
-        generate_hls(renditions["360p"], p360)
-        logger.info(f"360p files: {os.listdir(p360)}")
-
-        generate_hls(renditions["720p"], p720)
-        logger.info(f"720p files: {os.listdir(p720)}")
-
-        generate_hls(renditions["1080p"], p1080)
-        logger.info(f"1080p files: {os.listdir(p1080)}")
-
-        # master playlist
-        master_path = create_master_playlist(hls_dir)
-        logger.info(f"MASTER PLAYLIST EXISTS: {os.path.exists(master_path)}")
         logger.info(f"HLS ROOT: {os.listdir(hls_dir)}")
 
         # upload
+        upload_start = time.perf_counter()
         upload_hls_thumbnail_video(hls_dir=hls_dir, video_id=str(object_name))
         upload_hls_video(hls_dir=hls_dir, video_id=str(object_name), logger=logger)
+        upload_time = time.perf_counter() - upload_start
 
-        logger.info("Processing completed successfully")
+        total_time = time.perf_counter() - start_time
+
+        logger.info(
+            f"""
+        PROCESSING BREAKDOWN
+        -------------------
+        Download   : {download_time:.2f}s
+        HLS        : {hls_time:.2f}s
+        Upload     : {upload_time:.2f}s
+        Total      : {total_time:.2f}s
+        """
+        )
+
     except Exception as e:
         logger.exception("❌ PROCESS VIDEO FAILED: %s", str(e))
         raise

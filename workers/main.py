@@ -4,6 +4,9 @@ from rabbitmq import create_channel, create_connection
 from services.logger import logger
 from signals import register_signal_handlers
 
+from shared.models.user import User
+from shared.models.video import Video
+
 connection = create_connection()
 
 channel = create_channel(connection)

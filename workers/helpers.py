@@ -1,5 +1,6 @@
 import os
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from services.logger import logger
 
@@ -13,6 +14,27 @@ def verify_download(path: str) -> bool:
         return False
 
     return True
+
+
+def generate_all_hls(renditions: dict, hls_root: str):
+    futures = []
+
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        for quality, video_path in renditions.items():
+            output_dir = os.path.join(hls_root, quality)
+
+            futures.append(
+                executor.submit(
+                    generate_hls,
+                    video_path,
+                    output_dir,
+                )
+            )
+
+        for future in as_completed(futures):
+            future.result()
+
+    logger.info("All HLS renditions generated")
 
 
 def generate_hls(input_path: str, output_dir: str):
@@ -34,7 +56,9 @@ def generate_hls(input_path: str, output_dir: str):
         "-c:v",
         "libx264",
         "-preset",
-        "veryfast",
+        "superfast",
+        "-r",
+        "30",
         "-g",
         "48",
         "-sc_threshold",
