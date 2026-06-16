@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: streamforge-worker
+  namespace: streamforge
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: streamforge-worker
+
+  template:
+    metadata:
+      labels:
+        app: streamforge-worker
+
+    spec:
+      containers:
+        - name: worker
+
+          image: streamforge-worker:latest
+          imagePullPolicy: Never
+
+          env:
+            - name: PYTHONPATH
+              value: /app
+
+            - name: RABBITMQ_HOST
+              value: rabbitmq-service
+
+            - name: MINIO_ENDPOINT
+              value: minio-service:9000
+
+            - name: DATABASE_URL
+              value: postgresql://admin:admin@postgres-service:5432/streamforge

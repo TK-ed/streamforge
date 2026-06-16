@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamforge-api-ingress
+  namespace: streamforge
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - host: api.streamforge.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: streamforge-api
+                port:
+                  number: 80
