@@ -1,21 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
+
 metadata:
-  name: streamforge-api-ingress
+  name: grafana-ingress
   namespace: streamforge
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "2g"
+
 spec:
   ingressClassName: nginx
 
   rules:
-    - host: api.streamforge.local
+    - host: grafana.streamforge.local
+
       http:
         paths:
           - path: /
             pathType: Prefix
+
             backend:
               service:
-                name: streamforge-api
+                name: grafana
+
                 port:
-                  number: 80
+                  number: 3000

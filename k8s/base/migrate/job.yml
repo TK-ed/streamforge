@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: streamforge-migrate
+  namespace: streamforge
+
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: migrate
+
+          image: streamforge-api:latest
+          imagePullPolicy: Never
+
+          command:
+            - alembic
+            - upgrade
+            - head
+
+          env:
+            - name: DATABASE_URL
+              value: postgresql://admin:admin@postgres:5432/streamforge

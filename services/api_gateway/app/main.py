@@ -39,6 +39,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="StreamForge", lifespan=lifespan)
 
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=False,
+).instrument(app)
+
+instrumentator.expose(
+    app,
+    endpoint="/metrics",
+    include_in_schema=False,
+)
+
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
@@ -50,12 +62,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-instrumentator = Instrumentator()
-instrumentator.instrument(app).expose(app)
 
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(videos_router)
+
+# @app.on_event("startup")
+# async def _startup():
+#     instrumentator.expose(app, endpoint="/metrics")
 
 
 @lru_cache
