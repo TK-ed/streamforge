@@ -6,14 +6,17 @@ from functools import lru_cache
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest, make_asgi_app
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.responses import Response
 
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
 from app.api.videos import router as videos_router
 from app.services.minio_service import create_bucket
+from services.api_gateway.app.core.instrumentation import setup_tracing
 from services.api_gateway.app.core.middleware import limiter
+from services.api_gateway.app.core.observability import setup_logging
 
 from . import config
 
@@ -39,21 +42,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="StreamForge", lifespan=lifespan)
 
-instrumentator = Instrumentator(
-    should_group_status_codes=False,
-    should_ignore_untemplated=True,
-    should_respect_env_var=False,
-).instrument(app)
-
-instrumentator.expose(
-    app,
-    endpoint="/metrics",
-    include_in_schema=False,
-)
-
-app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "https://yourfrontend.com"],
@@ -62,14 +50,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(videos_router)
 
-# @app.on_event("startup")
-# async def _startup():
-#     instrumentator.expose(app, endpoint="/metrics")
+# Logs -> OTel Collector -> Loki ; Traces -> OTel Collector -> Jaeger
+setup_logging()
+setup_tracing(app)
 
 
 @lru_cache
@@ -77,6 +67,14 @@ def get_settings():
     return config.Settings()
 
 
+app.mount("/metrics", make_asgi_app())
+
+
 @app.get("/")
 def health():
     return {"status": "healthy", "rabbit_mq": os.getenv("RABBITMQ_HOST")}
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

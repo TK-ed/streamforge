@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: streamforge-api:latest
+          image: streamforge-api:v2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -31,3 +31,9 @@ spec:
               value: rabbitmq
             - name: MINIO_ENDPOINT
               value: minio:9000
+            - name: MINIO_PUBLIC_ENDPOINT
+              value: http://minio-api.streamforge.local
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.streamforge:4317
+            - name: OTEL_SERVICE_NAME
+              value: api-gateway

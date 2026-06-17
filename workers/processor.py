@@ -63,9 +63,7 @@ def process_video(video: Video, object_name: str, db, channel):
             output_dir=hls_dir,
         )
         hls_time = time.perf_counter() - hls_start
-        logger.info(
-            f"Adaptive HLS generation took {time.perf_counter() - hls_time:.2f}s"
-        )
+        logger.info(f"Adaptive HLS generation took {hls_time:.2f}s")
 
         logger.info(f"HLS ROOT: {os.listdir(hls_dir)}")
 

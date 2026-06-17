@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: streamforge
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: jaeger
+
+  template:
+    metadata:
+      labels:
+        app: jaeger
+
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:latest
+
+          env:
+            # Accept traces over OTLP (4317/4318) from the OTel Collector.
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"
+
+          ports:
+            - containerPort: 16686   # UI
+            - containerPort: 4317    # OTLP gRPC
+            - containerPort: 4318    # OTLP HTTP

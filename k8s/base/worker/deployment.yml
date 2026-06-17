@@ -36,3 +36,9 @@ spec:
 
             - name: DATABASE_URL
               value: postgresql://admin:admin@postgres-service:5432/streamforge
+
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.streamforge:4317
+
+            - name: OTEL_SERVICE_NAME
+              value: worker
