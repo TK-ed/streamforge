@@ -28,10 +28,15 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # redis:
-  #   image: redis:7
-  #   ports:
-  #     - "6379:6379"
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -108,6 +113,7 @@ services:
       - rabbitmq
       - minio
       - otel-collector
+      - redis
 
   grafana:
     image: grafana/grafana

@@ -1,13 +1,12 @@
 from uuid import uuid4
 
 from app.core.dependencies import get_current_user
+from app.core.rate_limit import RateLimiter
 from app.services.minio_service import get_file_details, upload_file
 from app.services.rabbitmq_service import publish_video_uploaded
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from slowapi import Limiter
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from services.api_gateway.app.core.middleware import limiter
 from shared.db.db import get_db
 from shared.models.user import User
 from shared.models.video import Video
@@ -70,10 +69,11 @@ def get_video(
     return {"streaming_url": url}
 
 
-@router.post("/upload")
-@limiter.limit("5/minute")
+@router.post(
+    "/upload",
+    dependencies=[Depends(RateLimiter(times=5, seconds=60, scope="videos:upload"))],
+)
 async def upload_video(
-    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

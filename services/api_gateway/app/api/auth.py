@@ -1,3 +1,4 @@
+from app.core.rate_limit import RateLimiter
 from app.core.security import create_access_token, verify_password
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.services.auth_service import create_user
@@ -11,7 +12,11 @@ from shared.models.user import User
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60, scope="auth:register"))],
+)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     return create_user(db, user)
 
@@ -26,7 +31,10 @@ async def get_video():
     return file
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    dependencies=[Depends(RateLimiter(times=10, seconds=60, scope="auth:login"))],
+)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
 

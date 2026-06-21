@@ -7,15 +7,14 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest, make_asgi_app
-from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import Response
 
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
 from app.api.videos import router as videos_router
+from app.core.rate_limit import close_rate_limiter, init_rate_limiter
 from app.services.minio_service import create_bucket
 from services.api_gateway.app.core.instrumentation import setup_tracing
-from services.api_gateway.app.core.middleware import limiter
 from services.api_gateway.app.core.observability import setup_logging
 
 from . import config
@@ -37,7 +36,11 @@ async def lifespan(app: FastAPI):
             print(f"Waiting for database: {e}")
             time.sleep(2)
 
+    init_rate_limiter()
+
     yield
+
+    await close_rate_limiter()
 
 
 app = FastAPI(title="StreamForge", lifespan=lifespan)
@@ -49,9 +52,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(auth_router)
 app.include_router(users_router)
