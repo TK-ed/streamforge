@@ -1,0 +1,11 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+GET,GET /users/me,HTTPError('401 Client Error: Unauthorized for url: GET /users/me'),168,2026-06-22T01:52:23Z,2026-06-22T01:53:46Z
+POST,POST /videos/upload,"CatchResponseError('upload failed: 401 {""detail"":""Not authenticated""}')",21,2026-06-22T01:52:27Z,2026-06-22T01:53:39Z
+POST,POST /auth/register,HTTPError('500 Server Error: Internal Server Error for url: POST /auth/register'),36,2026-06-22T01:52:23Z,2026-06-22T01:52:56Z
+POST,POST /auth/register,HTTPError('504 Server Error: Gateway Time-out for url: POST /auth/register'),421,2026-06-22T01:52:54Z,2026-06-22T01:53:11Z
+GET,GET /users/me,HTTPError('500 Server Error: Internal Server Error for url: GET /users/me'),3,2026-06-22T01:52:54Z,2026-06-22T01:52:55Z
+POST,POST /auth/login,CatchResponseError('login failed: 502 <html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n<hr><center>ngin'),36,2026-06-22T01:52:23Z,2026-06-22T01:52:56Z
+POST,POST /videos/upload,CatchResponseError('upload failed: 504 <html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body>\r\n<center><h1>504 Gateway Time-out</h1></center>\r\n<hr><c'),1,2026-06-22T01:53:27Z,2026-06-22T01:53:27Z
+GET,GET /videos/videos,HTTPError('401 Client Error: Unauthorized for url: GET /videos/videos'),101,2026-06-22T01:52:23Z,2026-06-22T01:53:44Z
+POST,POST /auth/login,CatchResponseError('login failed: 500 Internal Server Error'),11,2026-06-22T01:52:23Z,2026-06-22T01:52:54Z
+POST,POST /auth/login,CatchResponseError('login failed: 504 <html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body>\r\n<center><h1>504 Gateway Time-out</h1></center>\r\n<hr><c'),18,2026-06-22T01:52:55Z,2026-06-22T01:53:24Z

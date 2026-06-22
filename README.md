@@ -270,7 +270,55 @@ Local clusters can be brought up with **kind** (`kind-config.yaml`) or **minikub
 
 ## Load Testing
 
-A **Locust** suite under `loadtest/` (with its own `docker-compose.yml` and `k8s/` master/worker manifests) drives synthetic upload/stream traffic to validate scaling and rate-limit behavior.
+A **Locust** suite under `loadtest/` (with its own `docker-compose.yml` and `k8s/` master/worker manifests) drives synthetic upload/stream traffic to validate scaling and rate-limit behavior. Each virtual user registers a throwaway account, logs in once, then loops the read endpoints plus occasional uploads/stream lookups with realistic weights.
+
+### Results
+
+Run headless against the kind ingress (`http://api.streamforge.local`), Locust 2.44, 2-minute steady state.
+
+**100 concurrent users** — ramp 10/s, ~40 req/s sustained:
+
+| Metric | Value |
+|---|---|
+| Concurrent users | 100 |
+| Total requests | ~4,800 |
+| Throughput | ~40.5 req/s |
+| Failures | **0 (0.00%)** |
+| Latency — median | 8 ms |
+| Latency — p95 | 910 ms |
+| Latency — p99 | 2.0 s |
+| Latency — max | 3.5 s |
+
+Per-endpoint (avg / median / p95):
+
+| Endpoint | reqs | avg | median | p95 |
+|---|---|---|---|---|
+| `GET /` | 788 | 14 ms | 5 ms | 64 ms |
+| `GET /users/me` | 1,991 | 46 ms | 8 ms | 92 ms |
+| `GET /videos/videos` | 1,508 | 42 ms | 9 ms | 89 ms |
+| `GET /videos/{id}/stream` | 71 | 29 ms | 14 ms | 79 ms |
+| `POST /videos/upload` | 284 | 58 ms | 13 ms | 120 ms |
+| `POST /auth/login` | 100 | 1.45 s | 1.40 s | 2.1 s |
+| `POST /auth/register` | 100 | 1.66 s | 1.50 s | 2.9 s |
+
+Read paths are single-digit-millisecond; the tail latency is entirely the **bcrypt** password hashing on `/auth/register` and `/auth/login` (~1.5 s each), which is intentional work, not a server stall.
+
+**500 concurrent users** — ramp 25/s: the auth path **saturates**. ~92% of requests fail with `500 / 502 / 504` and registration times out (60 s cap), because bcrypt hashing serializes against a single API replica + Postgres in this local kind setup. This is the bottleneck to scale next (more API replicas via the HPA, and/or offloading hashing) — not a passing result.
+
+> Numbers above are from a local single-node **kind** cluster, so they reflect relative behavior and the auth bottleneck rather than production capacity. Re-run with the API HPA scaled out (and distributed Locust workers) to push past the auth ceiling. CSV reports land in `loadtest/results/`.
+
+### Platform at a glance
+
+| Aspect | Value |
+|---|---|
+| Cleanly sustained concurrency | 100 users, 0 failures |
+| API replicas | 2–10 (CPU-based HPA) |
+| Worker replicas | KEDA, scales on RabbitMQ queue depth (to zero when idle) |
+| Queue system | RabbitMQ (durable + DLQ/retry) |
+| Video format | Adaptive HLS (360p/720p/1080p) |
+| Rate limiting | Redis sliding-window (atomic Lua) |
+| Autoscaling | Kubernetes HPA (API) + KEDA (workers) |
+| Monitoring | Prometheus + Grafana (+ Jaeger, Loki) |
 
 ---
 
