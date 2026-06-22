@@ -1,0 +1,32 @@
+# Distributed Locust: 1 master (web UI on :8089) + N workers.
+#
+#   TARGET_HOST=http://api.streamforge.local docker compose -f loadtest/docker-compose.yml up --scale locust-worker=4
+#
+# Then open http://localhost:8089 and start a run.
+services:
+  locust-master:
+    build:
+      context: ..
+      dockerfile: loadtest/Dockerfile
+    ports:
+      - "8089:8089"
+    command: >
+      --master
+      --host ${TARGET_HOST:-http://api.streamforge.local}
+    extra_hosts:
+      # lets the container resolve *.streamforge.local to the host's ingress
+      - "api.streamforge.local:host-gateway"
+
+  locust-worker:
+    build:
+      context: ..
+      dockerfile: loadtest/Dockerfile
+    command: >
+      --worker
+      --master-host locust-master
+    extra_hosts:
+      - "api.streamforge.local:host-gateway"
+    depends_on:
+      - locust-master
+    deploy:
+      replicas: 3
