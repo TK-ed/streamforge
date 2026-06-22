@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust-worker
+  namespace: streamforge
+spec:
+  # Scale this for more load: kubectl scale deploy/locust-worker --replicas=8 -n streamforge
+  replicas: 4
+  selector:
+    matchLabels:
+      app: locust-worker
+  template:
+    metadata:
+      labels:
+        app: locust-worker
+    spec:
+      containers:
+        - name: locust
+          image: streamforge-loadtest:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --worker
+            - --master-host
+            - locust-master

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: streamforge-worker
+  namespace: streamforge
+
+spec:
+  # NOTE: `replicas` is intentionally omitted. KEDA's ScaledObject (scaledobject.yml)
+  # owns the replica count, scaling on RabbitMQ queue depth rather than CPU.
+  selector:
+    matchLabels:
+      app: streamforge-worker
+
+  template:
+    metadata:
+      labels:
+        app: streamforge-worker
+
+    spec:
+      containers:
+        - name: worker
+
+          image: streamforge-worker:latest
+          imagePullPolicy: Never
+
+          # prometheus_client metrics endpoint (start_http_server(8001)),
+          # exposed via the streamforge-worker Service for Prometheus scraping.
+          ports:
+            - name: metrics
+              containerPort: 8001
+
+          # FFmpeg transcoding is CPU- and memory-intensive, so this tier is
+          # sized higher than the API. Tune limits to your largest expected
+          # input; a single 1080p transcode can briefly use ~1-2 cores.
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+
+          env:
+            - name: PYTHONPATH
+              value: /app
+
+            - name: RABBITMQ_HOST
+              value: rabbitmq-service
+
+            - name: MINIO_ENDPOINT
+              value: minio-service:9000
+
+            - name: DATABASE_URL
+              value: postgresql://admin:admin@postgres-service:5432/streamforge
+
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.streamforge:4317
+
+            - name: OTEL_SERVICE_NAME
+              value: worker

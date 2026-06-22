@@ -1,3 +1,6 @@
+from enum import Enum
+
+
 class VideoStatus:
     PENDING = "pending"
     PROCESSING = "processing"
@@ -5,9 +8,13 @@ class VideoStatus:
     FAILED = "failed"
 
 
+class VideoEvents(str, Enum):
+    VIDEO_PROCESSING_STARTED = "VIDEO_PROCESSING_STARTED"
+    VIDEO_PROCESSING_COMPLETED = "VIDEO_PROCESSING_COMPLETED"
+    VIDEO_PROCESSING_FAILED = "VIDEO_PROCESSING_FAILED"
+
+
 MAX_RETRIES = 3
 
 VIDEO_QUEUE = "video.processing"
-DLQ_QUEUE = "video_uploaded_dlq"
-VIDEO_DLX = "video_dlx"
-VIDEO_FAILED_ROUTING_KEY = "video_failed"
+EVENT_QUEUE = "video.events"

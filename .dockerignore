@@ -1,0 +1,27 @@
+# VCS / CI
+.git
+.gitignore
+.github
+
+# Python caches & bytecode
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Load-test run output (not needed in images)
+loadtest/results/
+
+# Local/editor cruft
+.idea/
+.vscode/
+.DS_Store
+*.log
+.env

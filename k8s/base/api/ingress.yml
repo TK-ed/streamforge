@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamforge-api-ingress
+  namespace: streamforge
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "2g"
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - host: api.streamforge.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: streamforge-api
+                port:
+                  number: 80

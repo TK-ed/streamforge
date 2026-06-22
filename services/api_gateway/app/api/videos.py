@@ -1,11 +1,12 @@
 from uuid import uuid4
 
-from app.core.dependencies import get_current_user
-from app.services.minio_service import get_file_details, upload_file
-from app.services.rabbitmq_service import publish_video_uploaded
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_user
+from app.core.rate_limit import RateLimiter
+from app.services.minio_service import get_file_details, upload_file
+from app.services.rabbitmq_service import publish_video_uploaded
 from shared.db.db import get_db
 from shared.models.user import User
 from shared.models.video import Video
@@ -35,6 +36,7 @@ async def get_videos(
 @router.get("/{video_id}/stream")
 def get_video(
     video_id: str,
+    quality: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -46,22 +48,31 @@ def get_video(
         )
         .first()
     )
-    test = str(video.id)
-    logger.info(f"video: {video}")
-    test = f"hls/uploads/{test}/input.mp4/master.m3u8"
-    logger.info(f"passing value: {test}")
+
     if not video:
         raise HTTPException(
             status_code=404,
             detail="Video not found",
         )
 
-    url = get_file_details(test)
+    object_name = f"hls/uploads/{video.id}/input.mp4/{quality}p/index.m3u8"
+    logger.info(f"streaming object: {object_name}")
+
+    url = get_file_details(object_name)
+
+    if not url:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No {quality}p rendition available for this video",
+        )
 
     return {"streaming_url": url}
 
 
-@router.post("/upload")
+@router.post(
+    "/upload",
+    dependencies=[Depends(RateLimiter(times=5, seconds=60, scope="videos:upload"))],
+)
 async def upload_video(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
@@ -72,7 +83,6 @@ async def upload_video(
     video_id = str(uuid4())
     object_name = f"uploads/{video_id}/input.mp4"
 
-    print(object_name)
     existing = (
         db.query(Video)
         .filter(
@@ -87,16 +97,12 @@ async def upload_video(
             status_code=400,
             detail="File already uploaded",
         )
+
     upload_file(
         file_bytes=file_bytes,
         object_name=object_name,
         content_type=file.content_type,
     )
-
-    print("CURRENT USER ID:", current_user.id)
-    print("FILE NAME:", file.filename)
-    print("CONTENT TYPE:", file.content_type)
-    print("SIZE:", len(file_bytes))
 
     video = Video(
         id=video_id,
@@ -113,9 +119,10 @@ async def upload_video(
     db.refresh(video)
 
     publish_video_uploaded(video)
-    print(f"Published video {video.id} to RabbitMQ", flush=True)
+    logger.info(f"Published video {video.id} to RabbitMQ")
+
     return {
-        "id": video.id,
+        "id": str(video.id),
         "object_name": video.object_name,
         "status": video.status,
     }

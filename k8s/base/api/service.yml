@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamforge-api
+  namespace: streamforge
+spec:
+  selector:
+    app: streamforge-api
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP

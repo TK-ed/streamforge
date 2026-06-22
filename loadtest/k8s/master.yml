@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust-master
+  namespace: streamforge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust-master
+  template:
+    metadata:
+      labels:
+        app: locust-master
+    spec:
+      containers:
+        - name: locust
+          image: streamforge-loadtest:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --master
+            # In-cluster target: the API service (see prometheus scrape config).
+            - --host
+            - http://streamforge-api
+          ports:
+            - containerPort: 8089   # web UI
+            - containerPort: 5557   # worker <-> master
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: locust-master
+  namespace: streamforge
+spec:
+  selector:
+    app: locust-master
+  ports:
+    - name: web
+      port: 8089
+      targetPort: 8089
+    - name: comm
+      port: 5557
+      targetPort: 5557
+  type: ClusterIP

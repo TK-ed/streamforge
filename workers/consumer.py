@@ -1,11 +1,12 @@
 import json
 import traceback
 
-from constants import MAX_RETRIES, VIDEO_QUEUE
 from db import SessionLocal
+
+from constants import MAX_RETRIES, VIDEO_QUEUE
+from constants import VideoEvents as EVENT
 from processor import process_video
 from services.logger import logger
-
 from shared.models.video import Video
 from shared.schemas.video_status import VideoStatus as Status
 
@@ -21,31 +22,34 @@ def callback(
     try:
         data = json.loads(body)
 
-        video_id = data["video_id"]
-        object_name = f"uploads/{video_id}/input.mp4"
+        print(data["event"])
 
-        logger.info(f"Consumer is consuming video_id:{video_id}")
+        if data["event"] == EVENT.VIDEO_PROCESSING_STARTED:
+            video_id = data["video_id"]
+            object_name = f"uploads/{video_id}/input.mp4"
 
-        retries = data.get(
-            "retry_count",
-            0,
-        )
+            logger.info(f"Consumer is consuming video_id:{video_id}")
 
-        video = db.query(Video).filter(Video.id == video_id).first()
-
-        if not video:
-            ch.basic_ack(delivery_tag=method.delivery_tag)
-            logger.warning(
-                "Video %s not found",
-                video_id,
+            retries = data.get(
+                "retry_count",
+                0,
             )
-            return
 
-        process_video(video=video, object_name=object_name, db=db)
-        video.status = Status.COMPLETED
-        db.commit()
+            video = db.query(Video).filter(Video.id == video_id).first()
 
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+            if not video:
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+                logger.warning(
+                    "Video %s not found",
+                    video_id,
+                )
+                return
+
+            process_video(video=video, object_name=object_name, db=db, channel=ch)
+            video.status = Status.COMPLETED
+            db.commit()
+
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
     except Exception:
         traceback.print_exc()

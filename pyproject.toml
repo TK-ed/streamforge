@@ -3,3 +3,24 @@ line-length = 88
 
 [tool.isort]
 profile = "black"
+# Declared explicitly so first-party detection is identical everywhere. `app`
+# lives at services/api_gateway/app (not repo root), so isort's auto-detection
+# classifies it differently across environments (local vs CI) — pinning the
+# known packages keeps import grouping deterministic.
+known_first_party = [
+    "app",
+    "shared",
+    "services",
+    "workers",
+    "constants",
+    "consumer",
+    "processor",
+    "signals",
+]
+
+[tool.bandit]
+# B404/B603/B607: workers intentionally shell out to ffmpeg/ffprobe via
+# subprocess.run (no shell=True). B101: asserts are fine outside prod paths.
+# B108: /tmp is used deliberately for transcode scratch files in the worker.
+skips = ["B101", "B404", "B603", "B607", "B108"]
+exclude_dirs = ["alembic", "loadtest"]

@@ -3,21 +3,29 @@ import time
 
 from constants import VideoStatus as Status
 from services.logger import logger
+from services.metrics import VIDEO_FAILED, VIDEO_PROCESSING_TIME
 from services.minio import download_video, upload_hls_thumbnail_video, upload_hls_video
+from services.publisher import publish_event
 from services.thumbnail import generate_thumbnail
 from services.transcoder import generate_adaptive_hls
-
-from shared.db import db
 from shared.models.video import Video
 from workers.helpers import verify_download
 
 
-def process_video(video: Video, object_name: str, db: db):
+def process_video(video: Video, object_name: str, db, channel):
     try:
         print("🔥🔥🔥 PROCESS_VIDEO ACTIVE NEW BUILD 🔥🔥🔥")
         start_time = time.perf_counter()
 
         video.status = Status.PROCESSING
+
+        publish_event(
+            channel,
+            event_type="video.processing",
+            user_id=str(video.user_id),
+            video_id=str(video.id),
+        )
+
         db.commit()
 
         video_dir = f"/tmp/{video.id}"
@@ -53,9 +61,7 @@ def process_video(video: Video, object_name: str, db: db):
             output_dir=hls_dir,
         )
         hls_time = time.perf_counter() - hls_start
-        logger.info(
-            f"Adaptive HLS generation took {time.perf_counter() - hls_time:.2f}s"
-        )
+        logger.info(f"Adaptive HLS generation took {hls_time:.2f}s")
 
         logger.info(f"HLS ROOT: {os.listdir(hls_dir)}")
 
@@ -66,6 +72,8 @@ def process_video(video: Video, object_name: str, db: db):
         upload_time = time.perf_counter() - upload_start
 
         total_time = time.perf_counter() - start_time
+
+        VIDEO_PROCESSING_TIME.observe(total_time)
 
         logger.info(f"""
         PROCESSING BREAKDOWN
@@ -78,4 +86,6 @@ def process_video(video: Video, object_name: str, db: db):
 
     except Exception as e:
         logger.exception("❌ PROCESS VIDEO FAILED: %s", str(e))
+        video.status = Status.FAILED
+        VIDEO_FAILED.inc()
         raise

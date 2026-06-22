@@ -1,7 +1,9 @@
+import os
 from io import BytesIO
 
-from app.config import settings
 from minio import Minio
+
+from app.config import settings
 
 client = Minio(
     settings.MINIO_ENDPOINT,
@@ -31,11 +33,22 @@ def upload_file(
 
 
 def get_file_details(object_name: str):
+    """Return a player-reachable URL for an object, or None if it doesn't exist.
+
+    The public host is configurable so the same code works in Docker Compose
+    (localhost:9000) and Kubernetes (the MinIO S3 ingress / port-forward).
+    The bucket must allow anonymous download for the HLS playlist + segments
+    to be fetched by a player such as VLC.
+    """
+    public_endpoint = os.getenv(
+        "MINIO_PUBLIC_ENDPOINT", "http://localhost:9000"
+    ).rstrip("/")
+
     try:
-        obj = client.get_object(settings.BUCKET_NAME, object_name)
-        if obj:
-            print(f"Got the file: {object_name}")
-            hls_streaming_url = f"http://localhost:9000/streamforge/{object_name}"
-            return hls_streaming_url
+        # stat_object is a cheap HEAD; get_object opened a stream we never closed.
+        client.stat_object(settings.BUCKET_NAME, object_name)
     except Exception as e:
-        print(e)
+        print(f"Object not found: {object_name} ({e})")
+        return None
+
+    return f"{public_endpoint}/{settings.BUCKET_NAME}/{object_name}"

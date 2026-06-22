@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: streamforge
+  name: streamforge-api
+spec:
+  # NOTE: `replicas` is intentionally omitted. The HorizontalPodAutoscaler in
+  # hpa.yml owns the replica count (floor = minReplicas: 2). Re-adding replicas
+  # here would fight the HPA on every `kubectl apply`.
+  selector:
+    matchLabels:
+      app: streamforge-api
+  template:
+    metadata:
+      labels:
+        app: streamforge-api
+    spec:
+      containers:
+        - name: api
+          image: streamforge-api:v2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          workingDir: /app/services/api_gateway
+          command: ["uvicorn"]
+          args: ["app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          # requests = what the scheduler reserves AND the baseline the HPA's
+          # "averageUtilization: 70" is measured against. Without requests the
+          # HPA reports <unknown> and never scales.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          env:
+            - name: PYTHONPATH
+              value: /app
+            - name: DATABASE_URL
+              value: postgresql://admin:admin@postgres:5432/streamforge
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: MINIO_ENDPOINT
+              value: minio:9000
+            - name: MINIO_PUBLIC_ENDPOINT
+              value: http://minio-api.streamforge.local
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.streamforge:4317
+            - name: OTEL_SERVICE_NAME
+              value: api-gateway

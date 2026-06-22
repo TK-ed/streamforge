@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: streamforge
+
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+
+    exporters:
+      # Traces -> Jaeger (OTLP gRPC; the legacy `jaeger` exporter was removed).
+      otlp/jaeger:
+        endpoint: jaeger.streamforge:4317
+        tls:
+          insecure: true
+
+      # Logs -> Loki native OTLP ingestion endpoint.
+      # Loki runs in the `monitoring` namespace (Helm StatefulSet), so the
+      # cross-namespace FQDN is required here.
+      otlphttp/loki:
+        endpoint: http://loki.monitoring:3100/otlp
+
+      debug:
+        verbosity: detailed
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/jaeger, debug]
+
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlphttp/loki, debug]

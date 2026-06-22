@@ -1,0 +1,35 @@
+# HorizontalPodAutoscaler for the API gateway (stateless -> safe to scale on CPU).
+#
+# Prerequisites:
+#   1. metrics-server must be installed in the cluster (kind/minikube do NOT ship
+#      it by default: `minikube addons enable metrics-server`).
+#   2. The Deployment's containers must declare CPU `requests` (see deployment.yml)
+#      otherwise utilization can't be computed and the HPA stays at <unknown>.
+#
+# minReplicas is the HA floor: with 2, a single pod (or node) can fail and the
+# service stays up. The HPA scales up toward maxReplicas as average CPU rises.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: streamforge-api
+  namespace: streamforge
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: streamforge-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    # Scale up quickly under load, but scale down slowly to avoid flapping.
+    scaleDown:
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 30
