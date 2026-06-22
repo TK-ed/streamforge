@@ -9,12 +9,12 @@ from services.publisher import publish_event
 from services.thumbnail import generate_thumbnail
 from services.transcoder import generate_adaptive_hls
 
-from shared.db import db
+from shared.db import db  # noqa: F811
 from shared.models.video import Video
 from workers.helpers import verify_download
 
 
-def process_video(video: Video, object_name: str, db, channel):
+def process_video(video: Video, object_name: str, db, channel):  # noqa: F811
     try:
         print("🔥🔥🔥 PROCESS_VIDEO ACTIVE NEW BUILD 🔥🔥🔥")
         start_time = time.perf_counter()

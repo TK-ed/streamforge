@@ -1,0 +1,51 @@
+# KEDA ScaledObject for the transcoding workers.
+#
+# Why KEDA instead of a CPU HPA: transcoding is bursty and queue-driven. A CPU
+# HPA only reacts AFTER pods are already saturated, by which point the backlog
+# is deep. Scaling on RabbitMQ queue depth adds capacity the moment work piles
+# up, and can scale to zero when the queue is empty.
+#
+# Prerequisites:
+#   1. KEDA must be installed in the cluster (https://keda.sh/docs/deploy/).
+#   2. A way for KEDA to reach RabbitMQ. Below uses TriggerAuthentication backed
+#      by a Secret holding the AMQP connection string. Create it with:
+#        kubectl create secret generic rabbitmq-conn -n streamforge \
+#          --from-literal=host='amqp://guest:guest@rabbitmq:5672/'
+#      (default `guest` only works from localhost in stock RabbitMQ; for a real
+#       deployment create a dedicated user and use its credentials here.)
+#
+# If you'd rather not install KEDA yet, delete this file and instead add a plain
+# CPU HorizontalPodAutoscaler for the worker (same shape as api/hpa.yml). It's a
+# weaker signal for this workload but needs only metrics-server.
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-trigger-auth
+  namespace: streamforge
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: rabbitmq-conn
+      key: host
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: streamforge-worker
+  namespace: streamforge
+spec:
+  scaleTargetRef:
+    name: streamforge-worker     # the Deployment to scale
+  minReplicaCount: 1             # set to 0 to scale-to-zero when idle
+  maxReplicaCount: 10
+  pollingInterval: 15            # seconds between queue-depth checks
+  cooldownPeriod: 120            # wait before scaling back down after a burst
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: amqp
+        queueName: video.processing   # must match workers' VIDEO_QUEUE
+        mode: QueueLength
+        value: "5"                    # ~1 worker per 5 queued messages
+      authenticationRef:
+        name: rabbitmq-trigger-auth

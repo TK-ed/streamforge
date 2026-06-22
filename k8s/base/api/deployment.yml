@@ -4,7 +4,9 @@ metadata:
   namespace: streamforge
   name: streamforge-api
 spec:
-  replicas: 1
+  # NOTE: `replicas` is intentionally omitted. The HorizontalPodAutoscaler in
+  # hpa.yml owns the replica count (floor = minReplicas: 2). Re-adding replicas
+  # here would fight the HPA on every `kubectl apply`.
   selector:
     matchLabels:
       app: streamforge-api
@@ -22,6 +24,16 @@ spec:
           workingDir: /app/services/api_gateway
           command: ["uvicorn"]
           args: ["app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          # requests = what the scheduler reserves AND the baseline the HPA's
+          # "averageUtilization: 70" is measured against. Without requests the
+          # HPA reports <unknown> and never scales.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           env:
             - name: PYTHONPATH
               value: /app

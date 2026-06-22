@@ -6,8 +6,8 @@ metadata:
   namespace: streamforge
 
 spec:
-  replicas: 1
-
+  # NOTE: `replicas` is intentionally omitted. KEDA's ScaledObject (scaledobject.yml)
+  # owns the replica count, scaling on RabbitMQ queue depth rather than CPU.
   selector:
     matchLabels:
       app: streamforge-worker
@@ -23,6 +23,17 @@ spec:
 
           image: streamforge-worker:latest
           imagePullPolicy: Never
+
+          # FFmpeg transcoding is CPU- and memory-intensive, so this tier is
+          # sized higher than the API. Tune limits to your largest expected
+          # input; a single 1080p transcode can briefly use ~1-2 cores.
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
 
           env:
             - name: PYTHONPATH

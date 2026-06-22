@@ -1,7 +1,7 @@
 import json
 import traceback
 
-from constants import EVENT_QUEUE, MAX_RETRIES, VIDEO_QUEUE
+from constants import MAX_RETRIES, VIDEO_QUEUE
 from constants import VideoEvents as EVENT
 from db import SessionLocal
 from processor import process_video
