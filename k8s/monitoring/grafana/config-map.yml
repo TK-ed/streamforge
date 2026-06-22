@@ -16,7 +16,8 @@ data:
       - name: Loki
         type: loki
         access: proxy
-        url: http://loki.streamforge:3100
+        # Loki lives in the `monitoring` namespace; use the cross-namespace FQDN.
+        url: http://loki.monitoring:3100
 
       - name: Jaeger
         type: jaeger

@@ -24,6 +24,12 @@ spec:
           image: streamforge-worker:latest
           imagePullPolicy: Never
 
+          # prometheus_client metrics endpoint (start_http_server(8001)),
+          # exposed via the streamforge-worker Service for Prometheus scraping.
+          ports:
+            - name: metrics
+              containerPort: 8001
+
           # FFmpeg transcoding is CPU- and memory-intensive, so this tier is
           # sized higher than the API. Tune limits to your largest expected
           # input; a single 1080p transcode can briefly use ~1-2 cores.

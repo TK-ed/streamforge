@@ -25,8 +25,10 @@ data:
           insecure: true
 
       # Logs -> Loki native OTLP ingestion endpoint.
+      # Loki runs in the `monitoring` namespace (Helm StatefulSet), so the
+      # cross-namespace FQDN is required here.
       otlphttp/loki:
-        endpoint: http://loki.streamforge:3100/otlp
+        endpoint: http://loki.monitoring:3100/otlp
 
       debug:
         verbosity: detailed
