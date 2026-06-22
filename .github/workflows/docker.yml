@@ -2,9 +2,12 @@ name: Docker Build Check
 
 on:
   push:
-    branches: ["main", "fix/*", "feature/*"]
   pull_request:
     branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   docker-build:
@@ -17,13 +20,27 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build API Gateway
-        run: |
-          docker build -f services/api_gateway/Dockerfile -t api-gateway:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/api_gateway/Dockerfile
+          tags: api-gateway:ci
+          push: false
+          load: true
+          cache-from: type=gha,scope=api-gateway
+          cache-to: type=gha,scope=api-gateway,mode=max
 
       - name: Build Worker
-        run: |
-          docker build -f workers/Dockerfile -t worker:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: workers/Dockerfile
+          tags: worker:ci
+          push: false
+          load: true
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,scope=worker,mode=max
 
       - name: Validate docker-compose
-        run: |
-          test -f docker-compose.yml && docker compose config || echo "No compose file"
+        # -q fails on an invalid/missing compose file instead of silently passing.
+        run: docker compose config -q

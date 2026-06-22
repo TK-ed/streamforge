@@ -3,3 +3,9 @@ line-length = 88
 
 [tool.isort]
 profile = "black"
+
+[tool.bandit]
+# B404/B603/B607: workers intentionally shell out to ffmpeg/ffprobe via
+# subprocess.run (no shell=True). B101: asserts are fine outside prod paths.
+skips = ["B101", "B404", "B603", "B607"]
+exclude_dirs = ["alembic", "loadtest"]
