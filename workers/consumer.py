@@ -1,12 +1,12 @@
 import json
 import traceback
 
+from db import SessionLocal
+
 from constants import MAX_RETRIES, VIDEO_QUEUE
 from constants import VideoEvents as EVENT
-from db import SessionLocal
 from processor import process_video
 from services.logger import logger
-
 from shared.models.video import Video
 from shared.schemas.video_status import VideoStatus as Status
 

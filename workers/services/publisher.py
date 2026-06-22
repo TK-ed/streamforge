@@ -1,6 +1,7 @@
 import json
 
 import pika
+
 from constants import EVENT_QUEUE
 
 

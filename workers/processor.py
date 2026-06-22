@@ -8,7 +8,6 @@ from services.minio import download_video, upload_hls_thumbnail_video, upload_hl
 from services.publisher import publish_event
 from services.thumbnail import generate_thumbnail
 from services.transcoder import generate_adaptive_hls
-
 from shared.models.video import Video
 from workers.helpers import verify_download
 

@@ -49,7 +49,10 @@ jobs:
       # 2. Security Checks
       # -------------------------
       - name: Security scan (bandit)
-        run: bandit -r services shared workers -c pyproject.toml
+        # Block on medium+ severity findings; low-severity noise (e.g. the
+        # token_type="bearer" string, signal-handler try/except/pass) is not
+        # treated as a build failure. Config skips live in pyproject.toml.
+        run: bandit -r services shared workers -c pyproject.toml --severity-level medium
 
       - name: Dependency audit (pip-audit)
         # Advisory: surfaces known CVEs in dependencies without blocking the

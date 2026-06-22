@@ -1,6 +1,7 @@
 import time
 
 import pika
+
 from constants import (
     EVENT_QUEUE,
     VIDEO_QUEUE,
