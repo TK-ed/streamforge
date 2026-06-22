@@ -1,8 +1,8 @@
 import json
 
 import pika
-from app.config import settings
 
+from app.config import settings
 from shared.models.video import Video
 from workers.constants import VideoEvents as EVENT
 

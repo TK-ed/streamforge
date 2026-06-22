@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
-from app.config import settings
 from jose import jwt
 from passlib.context import CryptContext
+
+from app.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = settings.SECRET_KEY

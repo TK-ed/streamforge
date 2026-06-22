@@ -95,7 +95,10 @@ services:
 
   api:
     env_file:
-      - ./services/api_gateway/.env
+      # Optional: loaded for local dev when present; absent in CI (gitignored),
+      # so `required: false` keeps `docker compose config` from failing there.
+      - path: ./services/api_gateway/.env
+        required: false
     working_dir: /app/services/api_gateway
     build:
       context: .

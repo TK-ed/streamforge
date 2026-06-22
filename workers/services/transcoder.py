@@ -116,7 +116,9 @@ def generate_adaptive_hls(input_path: str, output_dir: str):
         f"{output_dir}/%v/index.m3u8",
     ]
 
-    logger.info(f"Starting adaptive HLS generation (encoder={ENCODER}, preset={ENCODER_PRESET})")
+    logger.info(
+        f"Starting adaptive HLS generation (encoder={ENCODER}, preset={ENCODER_PRESET})"
+    )
 
     result = subprocess.run(
         cmd,

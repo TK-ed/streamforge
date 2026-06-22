@@ -11,9 +11,10 @@ import math
 import uuid
 
 import redis.asyncio as aioredis
-from app.config import settings
 from fastapi import HTTPException, Request, status
 from jose import JWTError, jwt
+
+from app.config import settings
 
 # KEYS[1] = bucket key
 # ARGV[1] = limit (max requests per window)

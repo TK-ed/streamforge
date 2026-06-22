@@ -1,9 +1,9 @@
-from app.config import settings
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from shared.db.db import get_db
 from shared.models.user import User
 

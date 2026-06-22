@@ -1,10 +1,10 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app.core.rate_limit import RateLimiter
 from app.core.security import create_access_token, verify_password
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.services.auth_service import create_user
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
 from services.api_gateway.app.services.minio_service import client
 from shared.db.db import get_db
 from shared.models.user import User

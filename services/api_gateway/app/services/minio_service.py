@@ -1,8 +1,9 @@
 import os
 from io import BytesIO
 
-from app.config import settings
 from minio import Minio
+
+from app.config import settings
 
 client = Minio(
     settings.MINIO_ENDPOINT,

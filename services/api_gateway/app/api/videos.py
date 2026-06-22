@@ -1,12 +1,12 @@
 from uuid import uuid4
 
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy.orm import Session
+
 from app.core.dependencies import get_current_user
 from app.core.rate_limit import RateLimiter
 from app.services.minio_service import get_file_details, upload_file
 from app.services.rabbitmq_service import publish_video_uploaded
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy.orm import Session
-
 from shared.db.db import get_db
 from shared.models.user import User
 from shared.models.video import Video
